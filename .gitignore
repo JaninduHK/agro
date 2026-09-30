@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Firebase admin credentials — never commit
+service-account*.json
+*-firebase-adminsdk-*.json
+firebase-debug.log
+firestore-debug.log

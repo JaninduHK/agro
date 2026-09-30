@@ -1,0 +1,114 @@
+rules_version = '2';
+
+// There is deliberately NO catch-all rule. Firestore ORs every matching rule, so a
+// `match /{path=**}` that allows signed-in writes would override everything below.
+// Anything not matched here is denied.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function unchanged(keys) { return !changed().hasAny(keys); }
+
+    // FR-15. An operator (e.g. Kasun) signs in on the farmer's own number, so to
+    // the database they ARE the farmer — a uid check cannot tell them apart.
+    // What the operator does not have is the farmer's SIM. Changing where money
+    // goes therefore requires a sign-in code received in the last 5 minutes:
+    // the app re-verifies the farmer's number before it writes `payout`.
+    function recentlyVerified() {
+      return request.time < timestamp.value(request.auth.token.auth_time * 1000) + duration.value(5, 'm');
+    }
+
+    // Set only by a field officer via the console / Admin SDK, never by the app.
+    function trustFields() { return ['verified', 'verifiedBy', 'verifiedAt', 'rating', 'ratingCount']; }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if isOwner(uid)
+        && request.resource.data.phone == request.auth.token.phone_number
+        && request.resource.data.verified == false
+        && request.resource.data.role in request.resource.data.roles;
+      allow update: if isOwner(uid)
+        && unchanged(trustFields().concat(['phone']))
+        && request.resource.data.role in request.resource.data.roles
+        && (unchanged(['payout']) || recentlyVerified()
+            // payout is written freely until registration is finished
+            || resource.data.get('registration', null) != null);
+    }
+
+    match /listings/{id} {
+      allow read: if signedIn();
+      allow create: if isOwner(request.resource.data.farmerId);
+      allow update: if isOwner(resource.data.farmerId) && unchanged(['farmerId'])
+        // buyers bump the counters shown on "My listings"
+        || signedIn() && changed().hasOnly(['viewCount', 'offerCount']);
+      allow delete: if isOwner(resource.data.farmerId);
+    }
+
+    match /offers/{id} {
+      // queries must filter on farmerId or buyerId, or they are rejected
+      allow read: if isOwner(resource.data.farmerId) || isOwner(resource.data.buyerId);
+      allow create: if isOwner(request.resource.data.buyerId)
+        && request.resource.data.status == 'pending'
+        // one stored net figure, and it must add up
+        && request.resource.data.netToFarmer == request.resource.data.grossTotal - request.resource.data.feeAmount;
+      allow update: if (isOwner(resource.data.farmerId) || isOwner(resource.data.buyerId))
+        && changed().hasOnly(['status']);
+    }
+
+    match /agreements/{id} {
+      function a() { return resource.data; }
+      function isParty() {
+        return isOwner(a().farmerId) || isOwner(a().buyerId) || isOwner(a().transporterId);
+      }
+      function weightFields() {
+        return ['actualWeightKg', 'weightPhotos', 'weightRecordedBy', 'weightRecordedAt',
+                'weightConfirmed', 'finalTotal', 'finalFee', 'finalNet', 'status'];
+      }
+
+      allow read: if isParty();
+      allow create: if isOwner(request.resource.data.farmerId);
+      allow update: if
+        // farmer and buyer may update, but never re-point who the parties are
+        ((isOwner(a().farmerId) || isOwner(a().buyerId)) && unchanged(['farmerId', 'buyerId']))
+        // the transporter records the weight and nothing else
+        || (isOwner(a().transporterId) && changed().hasOnly(weightFields()))
+        // a transporter claims an unassigned agreement for themselves
+        || (a().transporterId == null && changed().hasOnly(['transporterId', 'transporterName'])
+            && isOwner(request.resource.data.transporterId));
+    }
+
+    match /orders/{id} {
+      function transporter() { return resource.data.get('transporterId', null); }
+
+      allow read: if isOwner(resource.data.buyerId) || isOwner(resource.data.farmerId)
+        || isOwner(transporter());
+      allow create: if isOwner(request.resource.data.buyerId)
+        && request.resource.data.netToFarmer == request.resource.data.goodsTotal - request.resource.data.feeAmount;
+      allow update: if
+        ((isOwner(resource.data.buyerId) || isOwner(resource.data.farmerId))
+          && unchanged(['buyerId', 'farmerId', 'total', 'netToFarmer', 'transporterId']))
+        // the delivering transporter moves it along: collected, delivered
+        || (isOwner(transporter()) && changed().hasOnly(['status', 'inspectionEndsAt']))
+        // a transporter claims the delivery job for an order nobody has taken
+        || (transporter() == null && changed().hasOnly(['transporterId', 'transporterName'])
+            && isOwner(request.resource.data.transporterId));
+    }
+
+    match /jobs/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if (isOwner(resource.data.transporterId) && unchanged(['transporterId', 'feeToTransporter']))
+        || (resource.data.transporterId == null && isOwner(request.resource.data.transporterId)
+            && unchanged(['feeToTransporter']));
+    }
+
+    match /problems/{id} {
+      allow read: if signedIn();
+      allow create: if isOwner(request.resource.data.reportedBy);
+      allow update: if signedIn() && unchanged(['reportedBy', 'orderId']);
+    }
+  }
+}

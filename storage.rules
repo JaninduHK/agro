@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Collection photos (FR-10) and dispute evidence (FR-11).
+// Paths: collections/{agreementId}/{file}   problems/{problemId}/{file}
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isPhoto() {
+      return request.resource.contentType.matches('image/.*') && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    match /collections/{agreementId}/{file} {
+      allow read: if request.auth != null;
+      // photos are time-stamped evidence: add, never overwrite or delete
+      allow create: if request.auth != null && isPhoto();
+    }
+
+    match /problems/{problemId}/{file} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && isPhoto();
+    }
+  }
+}

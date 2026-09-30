@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "254467313736",
+    "project_id": "agro-20442",
+    "storage_bucket": "agro-20442.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254467313736:android:cb0978a2f9f157a0d9087d",
+        "android_client_info": {
+          "package_name": "com.agro.farmtobuyer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjhYdWsCa0qX4Q6PtGMFtNLk_aI7rWWQc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
