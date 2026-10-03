@@ -1,4 +1,4 @@
-// S10 Track order — Athuraliya
+// S10 Track order — Ranaweera
 // CRUD: read order, update order status (confirm received). Report a problem
 // opens S11.
 import { router, useLocalSearchParams } from 'expo-router';
@@ -87,7 +87,19 @@ export default function TrackOrder() {
   const settled = o.status === 'confirmed';
 
   return (
-    <Screen header={header} gap={12}>
+    <Screen
+      header={header}
+      gap={12}
+      footer={
+        !settled && o.status !== 'problem' ? (
+          <>
+            <ErrorText error={error} />
+            <Button title="Confirm order received" onPress={confirm} loading={busy} disabled={order.fromCache} />
+            <Button title="Report a problem" variant="danger" onPress={() => router.push(`/problem/${o.id}`)} />
+          </>
+        ) : null
+      }
+    >
       {order.fromCache ? <OfflineBanner /> : null}
 
       <Card>
@@ -118,13 +130,6 @@ export default function TrackOrder() {
         <Timeline steps={steps} />
       </Card>
 
-      <ErrorText error={error} />
-      {!settled && o.status !== 'problem' ? (
-        <>
-          <Button title="Confirm order received" onPress={confirm} loading={busy} disabled={order.fromCache} />
-          <Button title="Report a problem" variant="danger" onPress={() => router.push(`/problem/${o.id}`)} />
-        </>
-      ) : null}
       {o.status === 'problem' ? (
         <Button title="See the problem report" variant="secondary" onPress={() => router.push(`/problem/${o.id}`)} />
       ) : null}

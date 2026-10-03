@@ -1,4 +1,4 @@
-// Retail order to the farmer — Ranaweera
+// Retail order to the farmer — Sahanya
 // /sale/<orderId>. A buyer has paid (money held by the platform); the farmer
 // accepts, which books a delivery job, or declines, which refunds the buyer.
 import { router, useLocalSearchParams } from 'expo-router';

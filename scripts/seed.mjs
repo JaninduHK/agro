@@ -9,6 +9,7 @@
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import { demoEmail, demoPassword } from '../lib/demo.js';
 import { calcNet } from '../lib/money.js';
 
 initializeApp({ credential: applicationDefault() });
@@ -28,13 +29,16 @@ const people = {
   traders: { uid: 'seed-buyer-nimaltraders', phone: '+94775550145' },
 };
 
+// Each seeded account can sign in both ways: by SMS code (phone provider) and by
+// demo sign-in (email + password derived from the number, see lib/demo.js).
 async function ensureAuthUser({ uid, phone }) {
+  const identity = { phoneNumber: phone, email: demoEmail(phone), password: demoPassword(phone) };
   try {
     await auth.getUser(uid);
-    await auth.updateUser(uid, { phoneNumber: phone });
+    await auth.updateUser(uid, identity);
   } catch (e) {
     if (e.code !== 'auth/user-not-found') throw e;
-    await auth.createUser({ uid, phoneNumber: phone });
+    await auth.createUser({ uid, ...identity });
   }
 }
 

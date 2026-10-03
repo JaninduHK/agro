@@ -1,4 +1,4 @@
-// Payment not completed — Sahanya
+// Payment not completed — Ranaweera
 // /payment/<orderId>. No money has left the buyer's account; the order stays
 // reserved for 30 minutes while they pay another way.
 import { router, useLocalSearchParams } from 'expo-router';
@@ -30,7 +30,7 @@ export default function PaymentFailed() {
   const [error, setError] = useState(null);
   const o = order.data;
 
-  const header = <AppBar title="Payment not completed" onBack={router.back} />;
+  const header = <AppBar title="Payment not completed" onBack={router.back} tone="alert" />;
   if (order.loading) return <Screen header={header}><Loading /></Screen>;
   if (!o) return <Screen header={header}><Notice tone="alert" title="Order not found">{t('There is no order {id}.', { id })}</Notice></Screen>;
 
@@ -74,7 +74,16 @@ export default function PaymentFailed() {
   }
 
   return (
-    <Screen header={header} gap={12}>
+    <Screen
+      header={header}
+      gap={12}
+      footer={
+        <>
+          <ErrorText error={error} />
+          <Button title="Cancel this order" variant="secondary" onPress={cancel} loading={busy === 'cancel'} disabled={!!busy} />
+        </>
+      }
+    >
       <Notice tone="alert" title={t('{method} could not complete the payment', { method })}>
         {t('No money has left your account. The reason given was “{reason}”.', { reason: t(o.paymentFailure ?? 'unknown') })}
       </Notice>
@@ -119,8 +128,6 @@ export default function PaymentFailed() {
         );
       })}
 
-      <ErrorText error={error} />
-      <Button title="Cancel this order" variant="secondary" onPress={cancel} loading={busy === 'cancel'} disabled={!!busy} />
     </Screen>
   );
 }

@@ -1,4 +1,4 @@
-// S00 Farmer home — Karanayaka
+// S00 Farmer home — Sahanya
 // One thing at the top: whatever needs the farmer's decision now (a weight to
 // confirm, a paid order to accept, then the best offer), otherwise the next
 // scheduled event. Offline, it shows what is saved and says what cannot be done.
@@ -60,7 +60,7 @@ export default function FarmerHome() {
   const decision = weighing ? 'weight' : newOrder ? 'order' : best && bestListing ? 'offer' : null;
 
   return (
-    <Screen header={<FarmerHeader eyebrow={greeting()} title={profile?.fullName ?? ''} />}>
+    <Screen header={<FarmerHeader eyebrow={greeting()} title={profile?.fullName ?? ''} onProfile={() => router.push('/profile')} tone={offline ? 'alert' : 'default'} />}>
       {offline ? <OfflineBanner /> : null}
       {loading && !offline ? <Loading label="Checking for new offers…" /> : null}
 

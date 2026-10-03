@@ -1,4 +1,4 @@
-// S10 Your orders — Athuraliya
+// S10 Your orders — Ranaweera
 // List of the buyer's orders; each opens its tracking screen.
 import { query, where } from '@react-native-firebase/firestore';
 import { router } from 'expo-router';

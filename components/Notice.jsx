@@ -11,7 +11,7 @@ import { color, radius, type } from '../theme';
 const tones = {
   neutral: { bg: color.surface,    border: color.lineSoft,      title: color.ink,         icon: null },
   field:   { bg: color.fieldLight, border: color.fieldBorder,   title: color.field,       icon: 'shield' },
-  time:    { bg: color.harvestBg,  border: color.harvestBorder, title: color.harvestText, icon: 'alert-triangle' },
+  time:    { bg: color.harvestBg,  border: color.harvestBorder, title: color.harvestText, icon: 'alert-circle', iconColor: color.harvest },
   alert:   { bg: color.alertBg,    border: color.alertBorder,   title: color.alert,       icon: 'alert-circle' },
 };
 
@@ -19,7 +19,7 @@ export default function Notice({ tone = 'neutral', title, children, style }) {
   const t = tones[tone];
   return (
     <View style={[styles.box, { backgroundColor: t.bg, borderColor: t.border }, style]}>
-      {t.icon ? <Feather name={t.icon} size={18} color={t.title} style={styles.icon} /> : null}
+      {t.icon ? <Feather name={t.icon} size={20} color={t.iconColor ?? t.title} style={styles.icon} /> : null}
       <View style={styles.text}>
         {title ? <Text style={[styles.title, { color: t.title }]}>{title}</Text> : null}
         {typeof children === 'string' ? (

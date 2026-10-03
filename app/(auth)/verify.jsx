@@ -1,4 +1,4 @@
-// S01a Enter code — Karanayaka
+// S01a Enter code — Athuraliya
 // Six boxes over one hidden input. 3 wrong codes locks sign-in for 15 minutes
 // (Firebase enforces its own limit; this screen tells the user in plain words).
 import { router, useLocalSearchParams } from 'expo-router';
@@ -10,6 +10,7 @@ import Button from '../../components/Button';
 import Card from '../../components/Card';
 import Screen from '../../components/Screen';
 import { maskPhone, useAuth } from '../../lib/auth';
+import { DEMO_CODE, DEMO_SIGN_IN } from '../../lib/demo';
 import { useI18n } from '../../lib/i18n';
 import { color, font, radius, type } from '../../theme';
 
@@ -53,8 +54,14 @@ export default function Verify() {
         setError('wrong');
       } else if (e?.code === 'auth/session-expired' || e?.code === 'auth/code-expired') {
         setError('That code has expired. Send a new code.');
-      } else {
+      } else if (e?.code === 'auth/network-request-failed') {
         setError('The code could not be checked. Check your connection and try again.');
+      } else if (e?.code === 'auth/operation-not-allowed') {
+        // Demo sign-in needs Authentication → Sign-in method → Email/Password enabled.
+        setError('Sign-in is not switched on for this app yet. It needs turning on in the Firebase console.');
+      } else {
+        // Keep the code visible: it is what a developer needs to fix it.
+        setError(t('The code could not be checked ({code}). Try again.', { code: e?.code ?? 'unknown error' }));
       }
     } finally {
       setChecking(false);
@@ -116,7 +123,11 @@ export default function Verify() {
           </Text>
         </Card>
       ) : (
-        <Text style={[type.caption, { color: color.muted }]}>6-digit code · usually arrives within 60 seconds</Text>
+        <Text style={[type.caption, { color: color.muted }]}>
+          {DEMO_SIGN_IN
+            ? t('Demo: no SMS is sent. Enter the code {code}.', { code: DEMO_CODE })
+            : '6-digit code · usually arrives within 60 seconds'}
+        </Text>
       )}
       {error && error !== 'wrong' ? <Text style={[type.caption, { color: color.alert }]}>{error}</Text> : null}
 

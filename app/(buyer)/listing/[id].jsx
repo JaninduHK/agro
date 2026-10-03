@@ -1,4 +1,4 @@
-// S09 Listing detail and checkout — Sahanya
+// S09 Listing detail and checkout — Ranaweera
 // CRUD: create order (and read it on the tracking screen). Payment is simulated:
 // the order is recorded with the buyer's money held by the platform.
 // A buyer taking the whole lot can make an offer instead — that is what reaches
@@ -21,7 +21,7 @@ import { ErrorText, Loading, OfflineBanner } from '../../../components/StatusVie
 import { countListingView, makeOffer, placeOrder } from '../../../lib/actions';
 import { charge } from '../../../lib/payments';
 import { useAuth } from '../../../lib/auth';
-import { formatDate, formatDay, formatMonthYear } from '../../../lib/dates';
+import { formatDay, formatFullDate, formatMonthYear } from '../../../lib/dates';
 import { COL, ref } from '../../../lib/firestore';
 import { useI18n } from '../../../lib/i18n';
 import { DELIVERY_FEE, GRADES, cropLabel } from '../../../lib/market';
@@ -146,7 +146,19 @@ export default function ListingDetail() {
   }
 
   return (
-    <Screen header={header} gap={12}>
+    <Screen
+      header={header}
+      gap={12}
+      footer={
+        <>
+          <ErrorText error={error} />
+          <Button title={t('Pay {amount} with {method}', { amount: formatLKR(total), method: t(METHOD_LABEL[method]) })} onPress={pay} loading={busy} disabled={listing.fromCache} />
+          <Text style={[type.caption, styles.muted, { textAlign: 'center' }]}>
+            {t('Paid through {method} · we never see or store your card number', { method: t(METHOD_LABEL[method]) })}
+          </Text>
+        </>
+      }
+    >
       {listing.fromCache ? <OfflineBanner detail="Saved information. Paying needs internet." /> : null}
 
       <Card>
@@ -164,7 +176,7 @@ export default function ListingDetail() {
         ) : null}
         {f?.verifiedBy ? (
           <Text style={[type.caption, styles.muted, { marginTop: 4 }]}>
-            {t('Identity checked in person by a {who}, {date}.', { who: t(f.verifiedBy).toLowerCase(), date: formatDate(f.verifiedAt) })}
+            {t('Identity checked in person — {who}, {date}.', { who: t(f.verifiedBy), date: formatFullDate(f.verifiedAt) })}
           </Text>
         ) : null}
       </Card>
@@ -187,7 +199,10 @@ export default function ListingDetail() {
         <LineItem label={`${t('{crop} {kg} kg', { crop: cropLabel(l.crop), kg: qty })} × ${formatLKR(l.askingPricePerKg)}`} amount={goods} />
         <LineItem label={t('Delivery to {to}', { to: profile?.village ?? t('you') })} amount={DELIVERY_FEE} />
         <Divider />
-        <LineItem label="Total" amount={total} strong />
+        <View style={styles.between}>
+          <Text style={[type.heading, styles.ink]}>Total</Text>
+          <Text style={[type.display, styles.ink, { fontSize: 26, lineHeight: 32 }]}>{formatLKR(total)}</Text>
+        </View>
       </Card>
 
       <Notice tone="field" title="Your money is held until you confirm">
@@ -199,11 +214,6 @@ export default function ListingDetail() {
 
       <FieldLabel>Pay with</FieldLabel>
       <ChoiceGrid columns={0} value={method} onChange={setMethod} options={METHODS} />
-      <ErrorText error={error} />
-      <Button title={t('Pay {amount} with {method}', { amount: formatLKR(total), method: t(METHOD_LABEL[method]) })} onPress={pay} loading={busy} disabled={listing.fromCache} />
-      <Text style={[type.caption, styles.muted, { textAlign: 'center' }]}>
-        {t('Paid through {method} · we never see or store your card number', { method: t(METHOD_LABEL[method]) })}
-      </Text>
 
       <Divider />
       {offering ? (

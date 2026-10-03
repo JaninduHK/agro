@@ -1,6 +1,7 @@
-// S11 Report a problem — Athuraliya
+// S11 Report a problem — Ranaweera
 // /problem/<orderId>. CRUD: create problem report (with photo evidence, FR-11).
 // Once sent, the same route shows the case and what happens next.
+import { Feather } from '@expo/vector-icons';
 import { query, where } from '@react-native-firebase/firestore';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -44,9 +45,12 @@ function Sent({ problem, order }) {
   const goodKg = order.quantityKg - problem.affectedQtyKg;
   return (
     <>
-      <Card>
+      <Card style={{ borderColor: color.field, borderWidth: 2 }}>
         <View style={styles.between}>
-          <Text style={[type.title, styles.ink]}>Report sent</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+            <Feather name="check" size={18} color={color.field} />
+            <Text style={[type.heading, { color: color.field }]}>Report sent</Text>
+          </View>
           <Chip label={problem.status === 'resolved' ? 'Resolved' : 'Open'} tone={problem.status === 'resolved' ? 'done' : 'time'} />
         </View>
         <Text style={[type.caption, styles.muted, { marginTop: 4 }]}>
@@ -139,10 +143,20 @@ export default function ReportProblem() {
   }
 
   return (
-    <Screen header={header} gap={12}>
-      <Text style={[type.title, styles.ink]}>What went wrong?</Text>
+    <Screen
+      header={header}
+      gap={12}
+      footer={
+        <>
+          <ErrorText error={error} />
+          <Button title="Send report" variant="alert" onPress={send} disabled={!photos.length} loading={busy} />
+          <Button title="Cancel" variant="secondary" onPress={router.back} />
+        </>
+      }
+    >
+      <Text style={[type.label, styles.ink]}>What went wrong?</Text>
       {ISSUES.map((i) => (
-        <OptionCard key={i.id} title={i.title} selected={issue === i.id} onPress={() => setIssue(i.id)} />
+        <OptionCard key={i.id} tone="alert" title={i.title} selected={issue === i.id} onPress={() => setIssue(i.id)} />
       ))}
 
       {issue !== 'late' ? (
@@ -150,6 +164,7 @@ export default function ReportProblem() {
           <FieldLabel style={{ marginTop: 4 }}>{t(`How much was ${noun}?`)}</FieldLabel>
           <ChoiceGrid
             columns={0}
+            tone="ink"
             value={String(affected)}
             onChange={(v) => setKg(Number(v))}
             options={amounts.map((n) => ({ id: String(n), label: n === o.quantityKg ? t('All {kg} kg', { kg: n }) : t('About {kg} kg', { kg: n }) }))}
@@ -180,9 +195,6 @@ export default function ReportProblem() {
         </View>
       </Notice>
 
-      <ErrorText error={error} />
-      <Button title="Send report" onPress={send} disabled={!photos.length} loading={busy} />
-      <Button title="Cancel" variant="secondary" onPress={router.back} />
     </Screen>
   );
 }

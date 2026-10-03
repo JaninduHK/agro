@@ -4,12 +4,14 @@
 //     <Card>…</Card>
 //   </Screen>
 //
+//   footer  white rounded action sheet with the screen's primary buttons
+//   bar     flat strip pinned above a tab bar
 // Pass `scroll={false}` for layouts that manage their own list (FlatList).
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { color } from '../theme';
+import { color, radius, shadow } from '../theme';
 
-export default function Screen({ header, footer, children, scroll = true, gap = 14, contentStyle }) {
+export default function Screen({ header, footer, bar, children, scroll = true, gap = 14, contentStyle }) {
   const insets = useSafeAreaInsets();
   const body = [styles.content, { gap }, contentStyle];
   return (
@@ -22,7 +24,8 @@ export default function Screen({ header, footer, children, scroll = true, gap = 
       ) : (
         <View style={[styles.scroll, ...body]}>{children}</View>
       )}
-      {footer ? <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>{footer}</View> : null}
+      {bar ? <View style={styles.bar}>{bar}</View> : null}
+      {footer ? <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>{footer}</View> : null}
     </View>
   );
 }
@@ -31,5 +34,18 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: color.canvas },
   scroll: { flex: 1 },
   content: { paddingTop: 18, paddingHorizontal: 16, paddingBottom: 18 },
-  footer: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
+  // flat strip pinned above the tab bar (My listings: "List new produce")
+  bar: { backgroundColor: color.surface, borderTopWidth: 1, borderColor: color.lineFaint, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
+  // white action sheet, rounded on top, with the screen's primary buttons
+  footer: {
+    backgroundColor: color.paper,
+    borderTopWidth: 1,
+    borderColor: color.lineFaint,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    gap: 10,
+    ...shadow.sheet,
+  },
 });

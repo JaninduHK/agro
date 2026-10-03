@@ -1,4 +1,4 @@
-// S02 Create listing — Karanayaka
+// S02 Create listing — Athuraliya
 // CRUD: create listing, update draft (saved after every step), delete draft.
 // Steps: what you are selling → how much → when and where → price and review.
 // /listing-new?draft=<id> resumes a draft ("Step 2 of 4 · saved 11.20 am by Kasun").

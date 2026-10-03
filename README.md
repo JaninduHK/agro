@@ -3,8 +3,9 @@
 A produce market for Sri Lankan farmers, buyers and transporters, with the price
 agreed before collection. React Native (Expo SDK 57) + Firebase.
 
-Design and data model: `../M03 data model and setup.md`. Prototypes:
-`../Prototype v2.dc.html`, `../Entry - Onboarding v2.html`.
+Design and data model: `../M03 data model and setup.md`. The UI follows **Prototype v3** and
+**Entry - Onboarding v3** (Plus Jakarta Sans + Bricolage Grotesque, forest-green app bar, lime
+accents); `theme.js` holds those values and every screen reads from it.
 
 ## Stack
 
@@ -70,9 +71,25 @@ There is no catch-all rule; anything not explicitly allowed is denied.
 
 ## Building the submission APK
 
+Locally (needs Android Studio's SDK; keeps the same signing key, so the SHA
+fingerprints already registered in Firebase keep working):
+
+```sh
+npx expo prebuild --platform android     # only after changing app.json or adding a native package
+cd android
+./gradlew app:assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+# → android/app/build/outputs/apk/release/app-release.apk
+```
+
+Or in the cloud. EAS signs with its own key: add that build's SHA-1 and SHA-256
+(`npx eas-cli credentials`) to the Firebase Android app, or phone sign-in fails.
+
 ```sh
 npm run build:apk          # EAS "preview" profile, installable APK
 ```
+
+The APK is signed with the shared debug key — fine for coursework and sideloading,
+not for the Play Store.
 
 ## Layout
 
@@ -81,11 +98,12 @@ app/                        routes (Expo Router)
   index.jsx                 S00a splash: waits for auth, redirects by role
   (auth)/                   welcome, sign-in, verify, register
   (farmer)/(tabs)/          home, listings, offers, money   + bottom nav
-  (farmer)/                 listing-new, agreement/[id], collection/[id], sale/[id] (retail order)
-  (buyer)/(tabs)/           search, orders, account
+  (farmer)/                 listing-new, agreement/[id], collection/[id], sale/[id] (retail order),
+                            profile (account — opened from the profile button on Home)
+  (buyer)/(tabs)/           search, orders, account (profile)
   (buyer)/                  listing/[id] (checkout + whole-lot offer), order/[id] (tracking),
                             payment/[id] (payment not completed), problem/[id]
-  (transport)/(tabs)/       jobs, transport-account
+  (transport)/(tabs)/       jobs, transport-account (profile)
   (transport)/              collect/[id]
 components/                 shared UI — use these, do not restyle per screen
 lib/
@@ -149,6 +167,13 @@ Anything missing falls back to English.
   declines (refund) → transporter collects, delivers → buyer confirms within 2 hours or reports a problem.
 
 ## What is simulated
+
+- **Sign-in codes** (`lib/demo.js`, `DEMO_SIGN_IN = true`). No SMS is sent: any Sri Lankan
+  mobile number registers or signs in with the code **123456**. Each number still gets its own
+  Firebase account (an email and password derived from the number), so the same number is the
+  same account on every phone. Needs **Authentication → Sign-in method → Email/Password** enabled.
+  It is not secure — anyone who knows a number can sign in as it — and exists because real SMS
+  needs Firebase's paid plan. Set the flag to `false` for real SMS codes.
 
 - **Payments** (`lib/payments.js`). Nothing is charged. Mobile wallets behave as if the buyer's
   balance were **Rs 25,000**: a larger payment fails with "insufficient balance" and opens

@@ -1,4 +1,4 @@
-// S03 Offers — Ranaweera
+// S03 Offers — Sahanya
 // Ranked by what the farmer receives, highest first (F02). The net is the stored
 // netToFarmer — never recomputed here.
 // CRUD: read offers; status is updated on accept (via Review agreement).

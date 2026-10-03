@@ -1,4 +1,4 @@
-// S01a Sign in — Karanayaka
+// S01a Sign in — Athuraliya
 // Phone number only. The account belongs to the number, whoever holds the phone.
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -10,7 +10,8 @@ import Card, { Divider } from '../../components/Card';
 import Field from '../../components/Field';
 import Screen from '../../components/Screen';
 import { toE164, useAuth } from '../../lib/auth';
-import { translate } from '../../lib/i18n';
+import { DEMO_CODE, DEMO_SIGN_IN } from '../../lib/demo';
+import { translate, useI18n } from '../../lib/i18n';
 import { color, type } from '../../theme';
 
 // Explains a bad number in the terms the prototype uses.
@@ -38,6 +39,11 @@ function sendError(e) {
       // Also what Firebase returns when SMS to Sri Lanka is not allowed
       // (Authentication → Settings → SMS region policy).
       return 'Sign-in by SMS is switched off for this number’s country. It needs turning on in the Firebase console.';
+    case 'auth/billing-not': // as React Native Firebase reports it
+    case 'auth/billing-not-enabled':
+      // Spark plan: real SMS is not available. Only numbers listed under
+      // Authentication → Sign-in method → Phone → "Phone numbers for testing" work.
+      return 'This number cannot receive a code yet. Real SMS is not switched on for this app — use a registered test number.';
     case 'auth/quota-exceeded':
       return 'Today’s SMS limit for the app has been reached. Try again tomorrow, or ask a field officer to sign you in.';
     default:
@@ -49,6 +55,7 @@ function sendError(e) {
 export default function SignIn() {
   const { intent } = useLocalSearchParams();
   const { sendCode } = useAuth();
+  const { t } = useI18n();
   const [phone, setPhone] = useState('');
   const [touched, setTouched] = useState(false);
   const [sending, setSending] = useState(false);
@@ -95,7 +102,11 @@ export default function SignIn() {
         autoComplete="tel"
         maxLength={13}
         error={touched || phone.replace(/\D/g, '').length >= 10 ? problem : null}
-        hint="We send a 6-digit code by SMS. Standard SMS charges apply."
+        hint={
+          DEMO_SIGN_IN
+            ? t('Demo: no SMS is sent. On the next screen enter the code {code}.', { code: DEMO_CODE })
+            : 'We send a 6-digit code by SMS. Standard SMS charges apply.'
+        }
       />
 
       <Button title="Send code" onPress={onSend} disabled={!valid} loading={sending} />

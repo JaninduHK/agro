@@ -11,7 +11,7 @@
       "package": "com.agro.farmtobuyer",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#2F6B3C",
+        "backgroundColor": "#0E2A1C",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -29,7 +29,7 @@
         {
           "image": "./assets/agro-logo.png",
           "imageWidth": 200,
-          "backgroundColor": "#F4F3EE"
+          "backgroundColor": "#0E2A1C"
         }
       ],
       "@react-native-firebase/app",
@@ -38,7 +38,8 @@
         "expo-image-picker",
         {
           "cameraPermission": "Photos of the load at collection and of damaged produce are kept as evidence for weight and refund decisions.",
-          "photosPermission": false
+          "photosPermission": false,
+          "microphonePermission": false
         }
       ],
       [

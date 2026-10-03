@@ -1,4 +1,4 @@
-// S06 My listings — Ranaweera
+// S06 My listings — Athuraliya
 // CRUD: read listings, update asking price, delete listing (and drafts).
 import { query, where } from '@react-native-firebase/firestore';
 import { router } from 'expo-router';
@@ -139,7 +139,7 @@ function DraftCard({ listing }) {
     ]);
   }
   return (
-    <Card>
+    <Card style={styles.draft}>
       <View style={styles.between}>
         <View style={{ flex: 1 }}>
           <Text style={[type.heading, styles.ink]}>{t('{what} — not finished', { what: listing.crop ? cropLabel(listing.crop) : t('New listing') })}</Text>
@@ -202,6 +202,7 @@ export default function MyListings() {
 
   return (
     <Screen
+      bar={all.length ? <Button title="List new produce" onPress={() => router.push('/listing-new')} /> : null}
       header={
         <FarmerHeader
           title="My listings"
@@ -249,14 +250,12 @@ export default function MyListings() {
         ),
       )}
 
-      {all.length ? (
-        <Button title="List new produce" variant="secondary" onPress={() => router.push('/listing-new')} />
-      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  draft: { borderStyle: 'dashed', borderColor: color.radio, shadowOpacity: 0, elevation: 0 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
   pair: { flexDirection: 'row', gap: 10 },
   muted: { color: color.muted },

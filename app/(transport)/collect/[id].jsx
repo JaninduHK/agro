@@ -1,4 +1,4 @@
-// S13 Confirm collection — Athuraliya
+// S13 Confirm collection — Karanayaka
 // /collect/<jobId>. CRUD: create the collection record — time-stamped photos
 // (FR-10) and the weight actually collected — on the shared agreement. The
 // farmer then confirms that weight on their Collection & payout screen.
@@ -103,7 +103,20 @@ export default function ConfirmCollection() {
         : t('{name} is asked to confirm it in their app before payment.', { name: farmer });
 
   return (
-    <Screen header={header} gap={12}>
+    <Screen
+      header={header}
+      gap={12}
+      footer={
+        recorded ? (
+          <Button title="Back to jobs" onPress={() => router.navigate('/jobs')} />
+        ) : (
+          <>
+            <ErrorText error={error} />
+            <Button title="Save weight and photos" onPress={save} disabled={!photos.length || !kg} loading={busy} />
+          </>
+        )
+      }
+    >
       <Card>
         <View style={styles.between}>
           <View style={{ flex: 1 }}>
@@ -124,7 +137,6 @@ export default function ConfirmCollection() {
           <Notice tone="field" title={t('{kg} kg recorded', { kg: a.actualWeightKg })}>
             {`${t('{n} photos saved at {time}.', { n: a.weightPhotos?.length ?? 0, time: formatTime(a.weightRecordedAt) })} ${confirmation}`}
           </Notice>
-          <Button title="Back to jobs" onPress={() => router.navigate('/jobs')} />
         </>
       ) : (
         <>
@@ -174,9 +186,6 @@ export default function ConfirmCollection() {
               {t('{name} sees the weight and your photos in their app and confirms it there. Nothing is paid until they do.', { name: a.farmerName })}
             </Text>
           </Card>
-
-          <ErrorText error={error} />
-          <Button title="Save weight and photos" onPress={save} disabled={!photos.length || !kg} loading={busy} />
         </>
       )}
     </Screen>

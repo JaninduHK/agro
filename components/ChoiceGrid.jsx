@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Text from './Text';
 import { color, font, radius, TAP_MIN } from '../theme';
 
-export default function ChoiceGrid({ options, value, onChange, columns = 2, style }) {
+export default function ChoiceGrid({ options, value, onChange, columns = 2, tone = 'field', style }) {
   const basis = columns ? `${100 / columns - 2}%` : undefined;
   return (
     <View style={[styles.grid, style]} accessibilityRole="radiogroup">
@@ -19,7 +19,7 @@ export default function ChoiceGrid({ options, value, onChange, columns = 2, styl
             onPress={() => onChange(o.id)}
             accessibilityRole="radio"
             accessibilityState={{ checked: selected }}
-            style={[styles.tile, columns ? { flexBasis: basis } : styles.flex, selected && styles.selected]}
+            style={[styles.tile, columns ? { flexBasis: basis } : styles.flex, selected && (tone === 'ink' ? styles.selectedInk : styles.selected)]}
           >
             <Text style={[styles.label, selected && styles.labelSelected]}>{o.label}</Text>
           </Pressable>
@@ -45,6 +45,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   selected: { borderWidth: 2, borderColor: color.field, backgroundColor: color.fieldLight },
+  selectedInk: { borderWidth: 2, borderColor: color.ink },
   label: { fontFamily: font.medium, fontSize: 15, lineHeight: 20, color: color.ink, textAlign: 'center' },
   labelSelected: { fontFamily: font.semibold },
 });

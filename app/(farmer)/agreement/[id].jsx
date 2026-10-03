@@ -1,7 +1,8 @@
-// S04 Review agreement — Ranaweera
+// S04 Review agreement — Sahanya
 //   /agreement/new?offer=<offerId>  review before accepting (every deduction listed)
 //   /agreement/AG-2214              the confirmed agreement: what is fixed, what can still change
 import { query, where } from '@react-native-firebase/firestore';
+import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
@@ -43,12 +44,22 @@ function Review({ offerId }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
-  if (offer.loading || listing.loading) return <Loading />;
   const o = offer.data;
+  // Review owns its screen so the Accept button can sit in the bottom sheet.
+  const frame = (body, footer) => (
+    <Screen gap={12} header={<FarmerHeader title="Review agreement" subtitle={o?.buyerName} onBack={router.back} />} footer={footer}>
+      {body}
+    </Screen>
+  );
+  if (offer.loading || listing.loading) return frame(<Loading />);
   const l = listing.data;
-  if (!o || !l) return <Notice tone="alert" title="This offer is no longer available">It may have been withdrawn or already accepted.</Notice>;
+  if (!o || !l) {
+    return frame(<Notice tone="alert" title="This offer is no longer available">It may have been withdrawn or already accepted.</Notice>);
+  }
   if (o.status !== 'pending') {
-    return <Notice tone="alert" title="This offer has already been answered">{t('Its status is “{status}”.', { status: t(o.status) })}</Notice>;
+    return frame(
+      <Notice tone="alert" title="This offer has already been answered">{t('Its status is “{status}”.', { status: t(o.status) })}</Notice>,
+    );
   }
 
   const collection = tomorrowMorning();
@@ -67,7 +78,7 @@ function Review({ offerId }) {
     }
   }
 
-  return (
+  return frame(
     <>
       {offer.fromCache ? <OfflineBanner detail="You can read this offer, but accepting it needs internet." /> : null}
       <Card>
@@ -93,13 +104,15 @@ function Review({ offerId }) {
         <LineItem label="Collected by" value={t('Booked after you accept')} />
         <LineItem label="Collection" value={formatDayTime(collection)} />
       </Card>
-      <Notice title="These are all the deductions.">
+      <Notice tone="field" title="These are all the deductions.">
         {t('No other fee is taken at collection or at payment. If the weight recorded at collection differs from {kg} kg, you are asked to agree before anything is paid.', { kg: o.quantityKg })}
       </Notice>
+    </>,
+    <>
       <ErrorText error={error} />
       <Button title={t('Accept — {amount}', { amount: formatLKR(o.netToFarmer) })} onPress={accept} loading={busy} disabled={offer.fromCache} />
       <Button title="Go back to offers" variant="secondary" onPress={router.back} />
-    </>
+    </>,
   );
 }
 
@@ -132,8 +145,11 @@ function Confirmed({ id }) {
   return (
     <>
       {agreement.fromCache ? <OfflineBanner /> : null}
-      <Card>
-        <Text style={[type.title, styles.ink]}>{t('Agreed with {buyer}', { buyer: a.buyerName })}</Text>
+      <Card style={styles.done}>
+        <View style={styles.doneHead}>
+          <Feather name="check" size={18} color={color.field} />
+          <Text style={[type.heading, { color: color.field, flex: 1 }]}>{t('Agreed with {buyer}', { buyer: a.buyerName })}</Text>
+        </View>
         <Text style={[type.caption, styles.muted, { marginTop: 4 }]}>
           {t('Confirmed {date}, {time} · Agreement no. {id}', { date: formatDay(a.createdAt), time: formatTime(a.createdAt), id: a.id })}
         </Text>
@@ -166,7 +182,7 @@ function Confirmed({ id }) {
                 : t('A transporter is being booked for this collection')}
             </Text>
           </View>
-          <Chip label="Editable" />
+          <Chip label="Editable" tone="time" />
         </View>
         <View style={styles.between}>
           <View style={{ flex: 1 }}>
@@ -186,14 +202,17 @@ function Confirmed({ id }) {
 export default function Agreement() {
   const { id, offer } = useLocalSearchParams();
   const reviewing = id === 'new';
+  if (reviewing) return <Review offerId={offer} />;
   return (
-    <Screen header={<FarmerHeader title={reviewing ? 'Review agreement' : 'Agreement confirmed'} onBack={router.back} />}>
-      {reviewing ? <Review offerId={offer} /> : <Confirmed id={id} />}
+    <Screen gap={12} header={<FarmerHeader title="Agreement confirmed" onBack={router.back} />}>
+      <Confirmed id={id} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  done: { borderColor: color.field, borderWidth: 2 },
+  doneHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   muted: { color: color.muted },
   ink: { color: color.ink },

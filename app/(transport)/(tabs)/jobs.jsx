@@ -1,4 +1,4 @@
-// S12 Jobs near you — Athuraliya
+// S12 Jobs near you — Karanayaka
 // CRUD: read jobs, update job (accept it, collect, mark delivered).
 // Two kinds of job: a bulk agreement (weight and photos recorded at the gate,
 // on Confirm collection) and a retail order delivery (collected, then delivered).
@@ -24,10 +24,10 @@ import { formatLKR } from '../../../lib/money';
 import { useQuery } from '../../../lib/useFirestore';
 import { color, font, type } from '../../../theme';
 
-function JobCard({ job, action }) {
+function JobCard({ job, action, featured = false }) {
   const { t } = useI18n();
   return (
-    <Card padding={14}>
+    <Card padding={14} style={featured && styles.featured}>
       <View style={styles.between}>
         <View style={{ flex: 1 }}>
           <Text style={[type.heading, styles.ink]}>{job.fromLocation} → {job.toLocation}</Text>
@@ -138,6 +138,7 @@ export default function Jobs() {
         <JobCard
           key={j.id}
           job={j}
+          featured={i === 0}
           action={
             <Button
               title="Accept this job"
@@ -167,6 +168,7 @@ export default function Jobs() {
 }
 
 const styles = StyleSheet.create({
+  featured: { borderColor: color.field, borderWidth: 2 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
   muted: { color: color.muted },
   ink: { color: color.ink },

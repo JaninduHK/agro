@@ -1,12 +1,12 @@
-// S05 Collection & payout — Ranaweera
+// S05 Collection & payout — Sahanya
 // The shared record: the transporter writes the weight, the farmer confirms it
 // here, and nothing is paid until they do.
+import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, View } from 'react-native';
 import Button from '../../../components/Button';
 import Card, { Divider, Inset } from '../../../components/Card';
-import Chip from '../../../components/Chip';
 import FarmerHeader from '../../../components/FarmerHeader';
 import Field from '../../../components/Field';
 import { LineItem, MoneyFigure } from '../../../components/LineItem';
@@ -197,11 +197,12 @@ export default function Collection() {
       {agreement.fromCache ? <OfflineBanner /> : null}
 
       {paid ? (
-        <Card>
-          <View style={styles.between}>
-            <Text style={[type.label, styles.muted]}>Received</Text>
-            <Chip label="Paid" tone="done" />
+        <Card style={styles.done}>
+          <View style={styles.doneHead}>
+            <Feather name="check" size={18} color={color.field} />
+            <Text style={[type.heading, { color: color.field }]}>Paid</Text>
           </View>
+          <Text style={[type.label, styles.muted, { marginTop: 10 }]}>Received</Text>
           <MoneyFigure amount={net} detail={`${formatDay(a.paidAt)}, ${formatTime(a.paidAt)} · ${payTo}`} />
         </Card>
       ) : (
@@ -242,6 +243,8 @@ export default function Collection() {
 }
 
 const styles = StyleSheet.create({
+  done: { borderColor: color.field, borderWidth: 2 },
+  doneHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
   pair: { flexDirection: 'row', gap: 8 },
   panel: { marginTop: 8, borderWidth: 1, borderColor: color.lineSoft },

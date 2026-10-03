@@ -1,4 +1,4 @@
-// S07 Money — Ranaweera
+// S07 Money — Sahanya
 // What is coming, where it goes, what has been paid. Changing where money goes
 // needs a fresh code sent to the farmer's own number — the database refuses the
 // write otherwise (firestore.rules, FR-15), so an operator cannot redirect payouts.
@@ -7,18 +7,16 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Text from '../../../components/Text';
-import Button from '../../../components/Button';
-import Card, { Divider } from '../../../components/Card';
-import ChoiceGrid from '../../../components/ChoiceGrid';
+import Card from '../../../components/Card';
+import ChangePayout, { payoutLabel } from '../../../components/ChangePayout';
 import Chip from '../../../components/Chip';
 import FarmerHeader from '../../../components/FarmerHeader';
-import Field from '../../../components/Field';
 import { MoneyFigure } from '../../../components/LineItem';
 import Notice from '../../../components/Notice';
 import Row from '../../../components/Row';
 import Screen from '../../../components/Screen';
-import { ErrorText, Loading, OfflineBanner } from '../../../components/StatusViews';
-import { paymentDueDate, updatePayout } from '../../../lib/actions';
+import { Loading, OfflineBanner } from '../../../components/StatusViews';
+import { paymentDueDate } from '../../../lib/actions';
 import { maskPhone, useAuth } from '../../../lib/auth';
 import { formatDay, formatShortDay, toDate } from '../../../lib/dates';
 import { COL, col } from '../../../lib/firestore';
@@ -29,100 +27,9 @@ import { useQuery } from '../../../lib/useFirestore';
 import { color, font, type } from '../../../theme';
 
 const firstName = (n = '') => n.split(' ')[0];
-const METHODS = [
-  { id: 'bank', label: 'Bank account' },
-  { id: 'mobile', label: 'Mobile money' },
-  { id: 'cash', label: 'Cash' },
-];
-
-// idle → code sent → code confirmed (fresh sign-in) → edit → saved
-function ChangePayout({ profile, uid, onDone }) {
-  const { sendCode, confirmCode } = useAuth();
-  const { t } = useI18n();
-  const [stage, setStage] = useState('start');
-  const [code, setCode] = useState('');
-  const [method, setMethod] = useState(profile.payout?.method ?? 'bank');
-  const [bankName, setBankName] = useState(profile.payout?.bankName ?? '');
-  const [account, setAccount] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState(null);
-
-  async function step(fn) {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-    } catch (e) {
-      setError(e);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const digits = account.replace(/\D/g, '');
-  const canSave = method === 'cash' || (digits.length >= 6 && (method !== 'bank' || bankName.trim()));
-
-  return (
-    <View style={{ gap: 10, marginTop: 12 }}>
-      {stage === 'start' ? (
-        <>
-          <Text style={[type.caption, styles.ink]}>
-            {t('We send a code to {name}’s number {phone}. Only someone with that phone can continue.', { name: firstName(profile.fullName), phone: maskPhone(profile.phone) })}
-          </Text>
-          <Button title="Send code" compact loading={busy} onPress={() => step(async () => { await sendCode(profile.phone); setStage('code'); })} />
-        </>
-      ) : null}
-      {stage === 'code' ? (
-        <>
-          <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={6} />
-          <Button
-            title="Confirm code"
-            compact
-            disabled={code.length !== 6}
-            loading={busy}
-            onPress={() => step(async () => { await confirmCode(code); setStage('edit'); })}
-          />
-        </>
-      ) : null}
-      {stage === 'edit' ? (
-        <>
-          <ChoiceGrid columns={0} options={METHODS} value={method} onChange={setMethod} />
-          {method === 'bank' ? <Field label="Bank" value={bankName} onChangeText={setBankName} /> : null}
-          {method !== 'cash' ? (
-            <Field
-              label={method === 'bank' ? 'Account number' : 'eZ Cash or mCash number'}
-              value={account}
-              onChangeText={setAccount}
-              keyboardType="number-pad"
-            />
-          ) : null}
-          <Button
-            title="Save where money goes"
-            compact
-            disabled={!canSave}
-            loading={busy}
-            onPress={() =>
-              step(async () => {
-                const payout =
-                  method === 'cash'
-                    ? { method }
-                    : { method, bankName: method === 'bank' ? bankName.trim() : null, accountLast4: digits.slice(-4), accountName: profile.fullName };
-                await updatePayout(uid, payout);
-                onDone();
-              })
-            }
-          />
-          <Text style={[type.caption, styles.muted]}>This change must be saved within 5 minutes of the code.</Text>
-        </>
-      ) : null}
-      <ErrorText error={error} />
-      <Button title="Cancel" variant="secondary" compact onPress={onDone} />
-    </View>
-  );
-}
 
 export default function Money() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { t } = useI18n();
   const uid = user?.uid;
   const [changing, setChanging] = useState(false);
@@ -146,12 +53,7 @@ export default function Money() {
   const monthFees = thisMonth.reduce((s, a) => s + (a.finalFee ?? a.feeAmount), 0);
 
   const p = profile?.payout;
-  const destination =
-    p?.method === 'bank'
-      ? `${p.bankName} ••••${p.accountLast4}`
-      : p?.method === 'mobile'
-        ? t('Mobile money ••••{last4}', { last4: p.accountLast4 })
-        : t('Cash at collection');
+  const destination = payoutLabel(p, t);
 
   return (
     <Screen header={<FarmerHeader title="Money" subtitle={profile?.fullName} />}>
@@ -231,8 +133,7 @@ export default function Money() {
         </Card>
       ) : null}
 
-      <Divider />
-      <Button title="Sign out" variant="secondary" onPress={signOut} />
+      <Row title="Account" subtitle={t('Your details, helper, language and sign out')} onPress={() => router.push('/profile')} />
     </Screen>
   );
 }
