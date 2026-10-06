@@ -1,6 +1,11 @@
 // Floating bottom nav (.nav in Prototype v3). Passed to expo-router <Tabs tabBar={...} />.
 // Each tab's label and icon come from its screen options: tabBarLabel is an
 // i18n key, tabBarIconName one of the icons below (the prototype's own paths).
+//
+// The bar floats: it is laid over the screen with nothing behind it, so content
+// scrolls under its rounded corners. Each tab layout wraps <Tabs> in
+// <FloatingTabs>, and Screen reads useTabBarSpace() to keep the last item clear.
+import { createContext, useContext } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -65,12 +70,27 @@ function NavIcon({ name, stroke }) {
   );
 }
 
+const NAV_HEIGHT = 68;
+const NAV_GAP = 12;
+
+const FloatingContext = createContext(false);
+
+export function FloatingTabs({ children }) {
+  return <FloatingContext.Provider value>{children}</FloatingContext.Provider>;
+}
+
+// Height the bar covers at the bottom of a tab screen; 0 outside the tabs.
+export function useTabBarSpace() {
+  const insets = useSafeAreaInsets();
+  return useContext(FloatingContext) ? NAV_HEIGHT + NAV_GAP + insets.bottom : 0;
+}
+
 export default function TabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
 
   return (
-    <View style={[styles.wrap, { paddingBottom: insets.bottom + 12 }]}>
+    <View style={[styles.wrap, { paddingBottom: insets.bottom + NAV_GAP }]} pointerEvents="box-none">
       <View style={styles.nav}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -100,9 +120,9 @@ export default function TabBar({ state, descriptors, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { backgroundColor: color.canvas, paddingHorizontal: 12 },
+  wrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 12 },
   nav: {
-    height: 68,
+    height: NAV_HEIGHT,
     backgroundColor: color.paper,
     borderWidth: 1,
     borderColor: color.lineFaint,

@@ -6,14 +6,18 @@
 //
 //   footer  white rounded action sheet with the screen's primary buttons
 //   bar     flat strip pinned above a tab bar
+// On a tab screen the tab bar floats over the page, so the body gets extra
+// bottom padding (and `bar` a margin) to stay clear of it.
 // Pass `scroll={false}` for layouts that manage their own list (FlatList).
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { color, radius, shadow } from '../theme';
+import { useTabBarSpace } from './TabBar';
 
 export default function Screen({ header, footer, bar, children, scroll = true, gap = 14, contentStyle }) {
   const insets = useSafeAreaInsets();
-  const body = [styles.content, { gap }, contentStyle];
+  const tabBar = useTabBarSpace();
+  const body = [styles.content, { gap }, tabBar && !bar ? { paddingBottom: tabBar + 18 } : null, contentStyle];
   return (
     <View style={styles.page}>
       {header}
@@ -24,7 +28,7 @@ export default function Screen({ header, footer, bar, children, scroll = true, g
       ) : (
         <View style={[styles.scroll, ...body]}>{children}</View>
       )}
-      {bar ? <View style={styles.bar}>{bar}</View> : null}
+      {bar ? <View style={[styles.bar, { marginBottom: tabBar }]}>{bar}</View> : null}
       {footer ? <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>{footer}</View> : null}
     </View>
   );
