@@ -1,185 +1,233 @@
-# agro — farm to buyer
+# agro
 
-A produce market for Sri Lankan farmers, buyers and transporters, with the price
-agreed before collection. React Native (Expo SDK 57) + Firebase.
+A mobile marketplace that connects Sri Lankan farmers directly with buyers and
+transporters. The farmer lists produce, a buyer makes an offer or places an order,
+and a transporter collects and delivers it. The price is agreed before collection,
+so the farmer knows what they will receive before the produce leaves the farm.
 
-Design and data model: `../M03 data model and setup.md`. The UI follows **Prototype v3** and
-**Entry - Onboarding v3** (Plus Jakarta Sans + Bricolage Grotesque, forest-green app bar, lime
-accents); `theme.js` holds those values and every screen reads from it.
+The app supports three roles (farmer, buyer, transporter) and works in English and
+Sinhala. Each account has one role, chosen at registration.
 
-## Stack
+## Tech stack
 
-| Layer | Choice |
+| Layer | What we use |
 |---|---|
-| App | Expo SDK 57, Expo Router (file-based routes in `app/`) |
-| Auth | Firebase phone + OTP, via React Native Firebase |
-| Data | Cloud Firestore, offline persistence on by default (native SDK) |
-| Files | Firebase Storage — collection photos, dispute evidence |
-| State | React Context (`lib/auth.js`, `lib/i18n.js`) + Firestore listeners |
+| Mobile app | React Native 0.86 with Expo SDK 57 |
+| Navigation | Expo Router (file based routes in `app/`) |
+| Sign in | Firebase Authentication, phone number with a one time code |
+| Database | Cloud Firestore, with offline persistence |
+| File storage | Firebase Storage, for collection and problem photos |
+| Firebase SDK | React Native Firebase v26 (native modules) |
+| State | React Context for auth and language, Firestore listeners for data |
+| UI | Custom components, react-native-svg, Plus Jakarta Sans and Bricolage Grotesque |
+| Tooling | ESLint, EAS and Gradle for builds, Firebase Admin SDK for seed data |
 
-React Native Firebase uses native code, so **the app does not run in Expo Go**.
-You install a development build once, then `npm start` hot-reloads JS as usual.
+## System architecture
 
-## First-time setup
+There is no custom backend server. The app talks to Firebase directly, and Firestore
+security rules decide what each signed in user can read and write.
 
-1. **Node 20+** and a real Android phone with USB debugging, or an emulator.
-2. `npm install`
-3. **Firebase project** (one person does this, then shares):
-   - Create the project; enable **Authentication → Phone**, **Firestore**, **Storage**.
-   - Project settings → Add an Android app with package `lk.agro.farmdirect`.
-   - Download `google-services.json` into this folder and commit it.
-   - Authentication → Sign-in method → Phone → **Phone numbers for testing**, add:
+```
++---------------------------------------------------+
+|                 agro mobile app                   |
+|                                                   |
+|   Screens (app/)          one folder per role     |
+|        |                                          |
+|   Components              shared UI building      |
+|        |                  blocks                  |
+|   lib/                    auth, actions, money,   |
+|        |                  dates, i18n, photos     |
+|   React Native Firebase   native SDK, local cache |
++--------|------------------------------------------+
+         |
+         v
++---------------------------------------------------+
+|                    Firebase                       |
+|                                                   |
+|   Authentication     who the user is              |
+|   Cloud Firestore    users, listings, offers,     |
+|                      agreements, orders, jobs,    |
+|                      problems                     |
+|   Storage            photos                       |
+|   Security rules     who can read or change what  |
++---------------------------------------------------+
+```
 
-     | Number | Code | Seeded as |
-     |---|---|---|
-     | +94 77 400 0321 | 123456 | Sunil Perera, farmer (Kasun operates) |
-     | +94 77 555 0142 | 123456 | Ranjith Stores, buyer |
-     | +94 71 123 4567 | 123456 | Nimal Jayasinghe, transporter |
+How the pieces work together:
 
-     Test numbers need no SMS quota and no Blaze plan.
-4. **Development build** (per person, once — or share one APK):
+- **Screens** only display data and collect input. They read live data through the
+  `useQuery` and `useDocument` hooks, so a change made on one phone shows up on the
+  others without a refresh.
+- **Writes go through `lib/actions.js`.** Anything that touches more than one
+  document, such as accepting an offer (which creates an agreement and a transport
+  job), is done there in a single transaction or batch.
+- **Security rules are the real access control.** For example, only the farmer who
+  owns a listing can edit it, a transporter can only record the weight on a job
+  they claimed, and the payout account can only be changed right after a fresh
+  sign in.
+- **Offline support** comes from Firestore's local cache. Screens show a banner when
+  they are displaying saved data, and the splash screen offers to continue without
+  internet.
+- **Routing by role.** After sign in, `app/index.jsx` reads the user's profile and
+  sends them to the home screen for their role. Each role folder has a guard so a
+  buyer cannot open farmer screens.
+
+## Getting started
+
+### What you need
+
+- Node.js 20 or newer
+- Android Studio with an emulator, or an Android phone with USB debugging turned on
+- Access to the Firebase project (ask a team member), or your own project set up as
+  described below
+
+The app uses native Firebase modules, so it does not run in Expo Go. You build a
+development version once and after that code changes reload instantly.
+
+### 1. Install
+
+```sh
+git clone https://github.com/JaninduHK/agro.git
+cd agro
+npm install
+```
+
+### 2. Connect Firebase
+
+If you are using the team project, get `google-services.json` from a team member and
+put it in the project root.
+
+To use your own Firebase project instead:
+
+1. Create a project in the Firebase console.
+2. Turn on Authentication (Phone and Email/Password), Firestore and Storage.
+3. Add an Android app with the package name `com.agro.farmtobuyer`.
+4. Download `google-services.json` into the project root.
+5. Deploy the security rules:
    ```sh
-   npx eas-cli@latest login
-   npm run build:dev          # cloud build, gives an APK link to install
+   npx firebase-tools login
+   npx firebase-tools use <your-project-id>
+   npm run deploy:rules
    ```
-   With Android Studio installed you can instead run `npm run android`.
-5. `npm start`, then open the installed **agro** dev build and pick the server.
 
-## Seed data
+### 3. Run the app
 
-Uses the prototype's own figures (Sunil, beans Grade A 200 kg, Ranjith Stores at
-Rs 192/kg, AG-2214, OR-8841, DP-1190) so screenshots match the prototype.
+Start an emulator or plug in a phone, then:
 
 ```sh
-# Firebase console → Project settings → Service accounts → Generate new private key
-GOOGLE_APPLICATION_CREDENTIALS=./service-account.json npm run seed
+npm run android
 ```
 
-The key file is git-ignored. Never commit it.
-
-## Security rules
-
-`firestore.rules` and `storage.rules` are deployed with:
+The first run compiles the native app and takes several minutes. After that, use
+this to start the dev server and open the installed app:
 
 ```sh
-npx firebase-tools login
-npx firebase-tools use <project-id>
-npm run deploy:rules
+npm start
 ```
 
-There is no catch-all rule; anything not explicitly allowed is denied.
+### 4. Add sample data (optional)
 
-## Building the submission APK
+The seed script fills the database with a farmer, a buyer, a transporter and some
+listings, offers and orders, which is useful for trying every screen.
 
-Locally (needs Android Studio's SDK; keeps the same signing key, so the SHA
-fingerprints already registered in Firebase keep working):
+1. In the Firebase console go to Project settings, Service accounts, and generate a
+   new private key.
+2. Save the file in the project root. It is ignored by git and must never be
+   committed.
+3. Run:
+   ```sh
+   GOOGLE_APPLICATION_CREDENTIALS=./<key-file>.json npm run seed
+   ```
+
+Seeded accounts:
+
+| Phone number | Account |
+|---|---|
+| 077 400 0321 | Sunil Perera, farmer |
+| 077 555 0142 | Ranjith Stores, buyer |
+| 071 123 4567 | Nimal Jayasinghe, transporter |
+
+In this build the sign in code for every number is `123456`.
+
+### 5. Build an APK
 
 ```sh
-npx expo prebuild --platform android     # only after changing app.json or adding a native package
+npx expo prebuild -p android
 cd android
-./gradlew app:assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
-# → android/app/build/outputs/apk/release/app-release.apk
+./gradlew app:assembleRelease
 ```
 
-Or in the cloud. EAS signs with its own key: add that build's SHA-1 and SHA-256
-(`npx eas-cli credentials`) to the Firebase Android app, or phone sign-in fails.
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`.
+The prebuild step is only needed after changing `app.json` or adding a native
+package.
+
+### Other commands
 
 ```sh
-npm run build:apk          # EAS "preview" profile, installable APK
+npm run lint      # check code style
+npm run doctor    # check the Expo setup and dependency versions
 ```
 
-The APK is signed with the shared debug key — fine for coursework and sideloading,
-not for the Play Store.
-
-## Layout
+## File layout
 
 ```
-app/                        routes (Expo Router)
-  index.jsx                 S00a splash: waits for auth, redirects by role
-  (auth)/                   welcome, sign-in, verify, register
-  (farmer)/(tabs)/          home, listings, offers, money   + bottom nav
-  (farmer)/                 listing-new, agreement/[id], collection/[id], sale/[id] (retail order),
-                            profile (account — opened from the profile button on Home)
-  (buyer)/(tabs)/           search, orders, account (profile)
-  (buyer)/                  listing/[id] (checkout + whole-lot offer), order/[id] (tracking),
-                            payment/[id] (payment not completed), problem/[id]
-  (transport)/(tabs)/       jobs, transport-account (profile)
-  (transport)/              collect/[id]
-components/                 shared UI — use these, do not restyle per screen
+app/                         screens, one file per route
+  _layout.jsx                root layout: fonts, auth and language providers
+  index.jsx                  splash screen, sends the user to their role's home
+  (auth)/                    welcome, sign in, enter code, register
+  (farmer)/
+    (tabs)/                  home, listings, offers, money
+    listing-new.jsx          create a listing
+    agreement/[id].jsx       review and accept an offer
+    collection/[id].jsx      confirm the collected weight, see the payout
+    sale/[id].jsx            accept or decline a retail order
+    profile.jsx              farmer account
+  (buyer)/
+    (tabs)/                  search, orders, account
+    listing/[id].jsx         listing detail, make an offer, checkout
+    order/[id].jsx           track an order
+    payment/[id].jsx         retry a payment that did not go through
+    problem/[id].jsx         report a problem with a delivery
+  (transport)/
+    (tabs)/                  jobs, account
+    collect/[id].jsx         record weight and photos at collection
+
+components/                  shared UI: buttons, cards, app bar, tab bar,
+                             form fields, timeline, profile screen
+
 lib/
-  actions.js                every multi-field / multi-document write (accept offer, record weight, …)
-  auth.js                   useAuth(): user, profile, status, sendCode, confirmCode, signOut
-  firestore.js              collection names, ROLE_HOME, registration helpers
-  useFirestore.js           useQuery / useDocument live reads, with `fromCache` for offline
-  money.js                  formatLKR, calcNet — the ONLY place money is formatted
-  dates.js                  'Tuesday, 8 September', '7.00 am' — locale-independent
-  market.js                 crops, grades, price guidance, delivery / transport fees
-  photos.js                 camera + Storage upload for evidence photos
-  i18n.js                   useI18n(): t(key), language, setLanguage
-theme.js                    colours, type, spacing — from the prototype CSS
-scripts/seed.mjs            seed data
+  auth.js                    sign in state and the useAuth hook
+  firestore.js               collection names and registration helpers
+  useFirestore.js            live read hooks (useQuery, useDocument)
+  actions.js                 all multi document writes
+  money.js                   currency formatting and fee calculation
+  dates.js                   date and time formatting
+  market.js                  crops, grades, price guidance, transport fees
+  i18n.js                    language switching
+  strings.si.js              Sinhala translations
+  photos.js                  camera and photo upload
+  payments.js                payment handling
+  network.js                 connection check
+
+theme.js                     colours, fonts, spacing, corner radius
+firebase.js                  Firebase setup
+firestore.rules              database security rules
+storage.rules                file storage security rules
+firestore.indexes.json       database indexes
+scripts/seed.mjs             sample data
+app.json                     Expo app configuration
+eas.json                     cloud build profiles
 ```
 
-Screens under `(tabs)/` show the bottom nav; screens beside `(tabs)/` push on top
-of it with a back arrow.
+Folders in brackets such as `(farmer)` group screens by role and do not appear in
+the route path. Screens inside `(tabs)` show the bottom navigation bar. Screens next
+to `(tabs)` open on top of it with a back button.
 
-## Rules everyone follows
+## Team
 
-- Money: always `formatLKR()`, always `color.ink`, never coloured.
-- Orange (`harvest`) means time pressure and nothing else.
-- Nothing tappable below `TAP_MIN` (52).
-- Store `netToFarmer`; never recompute it in a screen.
-- Text: always `import Text from components/Text`, never from `react-native`. It
-  translates and sets Sinhala in Noto Sans Sinhala (see *Sinhala / English* below).
-- Every farmer screen renders `<OwnerStrip />` under its app bar.
-
-## Data model additions (beyond the M03 document)
-
-- `users.registration` `{ step, savedBy, savedAt }` while sign-up is unfinished — resumable registration.
-- `agreements` also stores `farmerName`, `buyerName`, `transporterName`, `crop`, `grade`,
-  `paymentTerms`, `grossTotal`, `feeAmount`, `netToFarmer` (copied from the accepted offer, so
-  no screen recomputes money), and `farmerWeightKg` when a weight is disputed.
-- `jobs.farmerName`, `jobs.transporterName`, `jobs.orderId` (a retail delivery rather than an agreement).
-- `orders.buyerName`, `farmerVillage`, `deliverTo`, `grade`, `goodsTotal`, `feeAmount`, `netToFarmer`
-  (stored, like offers), `paymentFailure`, `reservedUntil`, `transporterId`, `transporterName`;
-  status also `cancelled`.
-- `problems.farmerName`.
-- Order and problem refunds are pro rata of what the buyer paid: 2 of 10 kg of Rs 2,150 = Rs 430.
-
-## Sinhala / English (NFR-04)
-
-gettext style: **the English text is the key**, and `lib/strings.si.js` maps it to Sinhala.
-Anything missing falls back to English.
-
-- Plain text needs nothing. `components/Text.jsx` looks up each plain string child, so
-  `<Text>What do you do?</Text>` and props like `<Button title="Next" />` translate themselves.
-- Text built from values uses one whole sentence with placeholders, so Sinhala word order can
-  differ: `t('Ends in {time}', { time })`. Never glue translated fragments together.
-- Dates (`lib/dates.js`), money (`Rs` → `රු.`) and crop names follow the language automatically.
-- Adding a string: write it in English in the screen, then add the same English as a key in
-  `lib/strings.si.js`. The catalogue is a first draft — have a native speaker review it.
-
-## Flows
-
-- **Bulk sale:** listing → buyer offer → farmer accepts (agreement + transport job) → transporter
-  records weight and photos → farmer confirms → paid.
-- **Retail order:** buyer pays at checkout (money held) → farmer accepts on *Sale* (delivery job) or
-  declines (refund) → transporter collects, delivers → buyer confirms within 2 hours or reports a problem.
-
-## What is simulated
-
-- **Sign-in codes** (`lib/demo.js`, `DEMO_SIGN_IN = true`). No SMS is sent: any Sri Lankan
-  mobile number registers or signs in with the code **123456**. Each number still gets its own
-  Firebase account (an email and password derived from the number), so the same number is the
-  same account on every phone. Needs **Authentication → Sign-in method → Email/Password** enabled.
-  It is not secure — anyone who knows a number can sign in as it — and exists because real SMS
-  needs Firebase's paid plan. Set the flag to `false` for real SMS codes.
-
-- **Payments** (`lib/payments.js`). Nothing is charged. Mobile wallets behave as if the buyer's
-  balance were **Rs 25,000**: a larger payment fails with "insufficient balance" and opens
-  *Payment not completed* (order 150 kg of beans or more to demonstrate it). Bank transfer always succeeds.
-- **Payout timing.** An agreement on 7-day terms stays `collected` after the weight is confirmed;
-  set it to `paid` in the console to show the paid state (on-collection terms pay out immediately).
-- **Price guidance** is a static table in `lib/market.js`.
-- **Offline splash.** Probes `clients3.google.com/generate_204`; no connection shows
-  *Cannot reach the market* with *Continue without internet*.
+| Member | Area |
+|---|---|
+| Sahanya | Registration, farmer home, offers, agreements, collection, earnings |
+| Athuraliya | Splash, welcome, sign in and code entry, farmer listings |
+| Ranaweera | Buyer search, checkout, payments, orders, problem reports |
+| Karanayaka | Transporter jobs and collection, shared components, project setup |
