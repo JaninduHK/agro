@@ -108,7 +108,7 @@ export default function ConfirmCollection() {
       gap={12}
       footer={
         recorded ? (
-          <Button title="Back to jobs" onPress={() => router.navigate('/jobs')} />
+          <Button title="Back to home" onPress={() => router.navigate('/transport-home')} />
         ) : (
           <>
             <ErrorText error={error} />
